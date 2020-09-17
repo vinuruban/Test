@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "906716367514",
+    "firebase_url": "https://uber-bca2d.firebaseio.com",
+    "project_id": "uber-bca2d",
+    "storage_bucket": "uber-bca2d.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:906716367514:android:5fa3b4893d911be3562d23",
+        "android_client_info": {
+          "package_name": "com.vinu.uber"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "906716367514-eue3k1eae9ped7dnooncu42hguahn9l2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtaTEcJYxS1pRwJjiMh4xGN9W-nwIoCdo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "906716367514-eue3k1eae9ped7dnooncu42hguahn9l2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
