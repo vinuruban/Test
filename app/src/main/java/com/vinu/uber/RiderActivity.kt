@@ -22,6 +22,7 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import java.util.*
 
@@ -32,6 +33,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
     var locationManager: LocationManager? = null
     var locationListener: LocationListener? = null
 
+    var auth = FirebaseAuth.getInstance() //current user
     var counter = 0 //to stop the address string from re rendering on Maps
     var callUberButton: Button? = null
     var uberRequestActive = false //to track whether an uber was called or not
@@ -154,7 +156,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
             val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             if (lastKnownLocation != null) { //if there exists a location, send request
 
-                val userID = intent.getStringExtra("userID")
+                val userID = intent.getStringExtra("userID") //TODO
                 val uniqueRequestID = UUID.randomUUID().toString()
 
                 //pass in user
@@ -168,5 +170,15 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 Toast.makeText(applicationContext, "Could not find location", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        Toast.makeText(
+                applicationContext,
+                "Logged out ${auth.currentUser?.uid}", //TODO
+                Toast.LENGTH_SHORT
+        ).show()
+        auth.signOut()
     }
 }
