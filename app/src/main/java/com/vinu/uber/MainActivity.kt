@@ -9,9 +9,7 @@ import android.widget.Toast
 import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.tasks.Task
-import com.google.firebase.auth.AuthResult
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.*
 import com.google.firebase.database.*
 
 class MainActivity : AppCompatActivity() {
@@ -27,67 +25,33 @@ class MainActivity : AppCompatActivity() {
 
         supportActionBar!!.hide() //full screen
 
-        if (auth.currentUser != null) { //IF USER WAS PREVIOUSLY LOGGED IN...
+        /** IF USER WAS PREVIOUSLY LOGGED IN... **/
+        if (auth.currentUser != null) {
             Toast.makeText(applicationContext, "User already logged in: " + auth.currentUser!!.uid, Toast.LENGTH_SHORT).show()
             redirectActivity()
-        } else { //ELSE, SIGN THEM UP...
-
-            //IF NO THERE ARE NO USERS IN THE FIREBASE DATABASE, SIGN UP AN ANONYMOUS USER
-            FirebaseDatabase.getInstance().getReference().child("userTypes")
-                    .addValueEventListener(object : ValueEventListener {
-                        override fun onDataChange(dataSnapshot: DataSnapshot) {
-                            if (!dataSnapshot.hasChildren()) { //if userTypes has no data...
-                                Toast.makeText(applicationContext, "Adding anonymous users...", Toast.LENGTH_SHORT).show()
-                                anonymousSignup() //TODO - cannot signup user through ValueEventListener
-                            }
-                        }
-
-                        override fun onCancelled(databaseError: DatabaseError) {
-                            // Getting Post failed, log a message
-                            Log.w("Error", "loadPost:onCancelled", databaseError.toException())
-                        }
-                    })
-
         }
+
+//        /** IF NO THERE ARE NO USERS IN THE FIREBASE DATABASE, SIGN UP AN ANONYMOUS USER **/
+//        FirebaseDatabase.getInstance().getReference().child("userTypes")
+//                .addValueEventListener(object : ValueEventListener {
+//                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+//                        if (!dataSnapshot.hasChildren()) { //if userTypes has no data...
+//                            Toast.makeText(applicationContext, "Adding anonymous users...", Toast.LENGTH_SHORT).show()
+//                            anonymousSignup()
+//                        }
+//                    }
+//
+//                    override fun onCancelled(databaseError: DatabaseError) {
+//                        // Getting Post failed, log a message
+//                        Log.w("Error", "loadPost:onCancelled", databaseError.toException())
+//                    }
+//                })
+
     }
 
     /** 'Let's Go' button - Rider/Driver switch  */
     fun letsGoClicked(view: View?) {
         redirectActivity()
-    }
-
-    fun anonymousSignup() {
-
-        //sign up rider
-        auth.signInAnonymously()
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    var userID = task.result?.user?.uid
-                    if (userID != null) {
-                        FirebaseDatabase.getInstance().getReference().child("userTypes").child("riders").child("userID").setValue(userID) // REALTIME DATABASE - creates an "user" folder (if it wasn't previously created) and stores user details inside
-                        Toast.makeText(baseContext, "Signed up a rider", Toast.LENGTH_SHORT).show()
-                        auth.signOut() //since there is no need to log user in //TODO - cannot signout in the RiderActivity
-                    }
-                } else {
-                    Toast.makeText(baseContext, "Authentication failed.", Toast.LENGTH_SHORT).show()
-                }
-            }
-
-        //sign up driver
-        auth.signInAnonymously()
-            .addOnCompleteListener(this) { task ->
-                if (task.isSuccessful) {
-                    var userID = task.result?.user?.uid
-                    if (userID != null) {
-                        FirebaseDatabase.getInstance().getReference().child("userTypes").child("drivers").child("userID").setValue(userID) // REALTIME DATABASE - creates an "user" folder (if it wasn't previously created) and stores user details inside
-                        Toast.makeText(baseContext, "Signed up a driver", Toast.LENGTH_SHORT).show()
-                        auth.signOut() //since there is no need to log user in //TODO - cannot signout in the RiderActivity
-                    }
-                } else {
-                    Toast.makeText(baseContext, "Authentication failed.", Toast.LENGTH_SHORT).show()
-                }
-            }
-
     }
 
     fun redirectActivity() {
@@ -113,9 +77,30 @@ class MainActivity : AppCompatActivity() {
             FirebaseDatabase.getInstance().getReference().child("userTypes").child(userType + "s").child("userID")
                 .addValueEventListener(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
-                        val userID = dataSnapshot.value as String
-                        intent?.putExtra("userID", userID)
-                        startActivity(intent)
+                        if (dataSnapshot.exists()) { /** if drivers/riders exist **/ //TODO - log anonymous user back in here
+                            val userID = dataSnapshot.value as String
+                            intent?.putExtra("userID", userID)
+                            startActivity(intent)
+                        }
+                        else { /** if drivers/riders don't exist in the database, sign them up **/
+                            anonymousSignup(userType)
+                            /** since new user is created and new dataSnapshot is required, the addValueEventListener code is called again below **/
+                            FirebaseDatabase.getInstance().getReference().child("userTypes").child(userType + "s").child("userID")
+                                    .addValueEventListener(object : ValueEventListener {
+                                        override fun onDataChange(dataSnapshot2: DataSnapshot) {
+                                            if (dataSnapshot2.exists()) { /** if drivers/riders exist **/
+                                            val userID = dataSnapshot2.value as String
+                                                intent?.putExtra("userID", userID)
+                                                startActivity(intent)
+                                            }
+                                        }
+
+                                        override fun onCancelled(databaseError2: DatabaseError) {
+                                            // Getting Post failed, log a message
+                                            Log.w("Error", "loadPost:onCancelled", databaseError2.toException())
+                                        }
+                                    })
+                        }
                     }
 
                     override fun onCancelled(databaseError: DatabaseError) {
@@ -125,6 +110,37 @@ class MainActivity : AppCompatActivity() {
                 })
 
         }
+
+    }
+
+    fun anonymousSignup(userType: String) {
+
+        auth.signInAnonymously()
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        var userID = task.result?.user?.uid
+                        FirebaseDatabase.getInstance().getReference().child("userTypes").child(userType  + "s").child("userID").setValue(userID) // REALTIME DATABASE - creates an "user" folder (if it wasn't previously created) and stores user details inside
+
+                        /** Convert an anonymous account to a permanent account - this will let us keep track of the account when logging out, and then sign them in again when required **/ //TODO - sort this out
+                        val credential = EmailAuthProvider.getCredential("test@test.co", "123456")
+                        task.result?.user?.linkWithCredential(credential) //TODO - auth was null, so test this out
+                                ?.addOnCompleteListener(this) { task ->
+                                    if (task.isSuccessful) {
+                                        Log.i("SDFSDFDSFSD", "linkWithCredential:success")
+                                    } else {
+                                        Log.i("SDFSDFDSFSD-FAIL", "linkWithCredential:fail")
+                                        Toast.makeText(baseContext, "Authentication failed.",
+                                                Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+
+                        Toast.makeText(baseContext, "Signed up a ${userType}: ${userID}", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(baseContext, "Authentication failed.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+
+        Toast.makeText(applicationContext, "check: ", Toast.LENGTH_SHORT).show()
 
     }
 
