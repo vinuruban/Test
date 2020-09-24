@@ -175,7 +175,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         if (uberRequestActive) { //if uber is active, cancel it
             FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).removeValue()
             Toast.makeText(applicationContext, "Uber cancelled", Toast.LENGTH_SHORT).show()
-            callUberButton.setText("Call An Uber")
+            callUberButton?.setText("Call An Uber")
             uberRequestActive = false
         } else { //else, request it
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
