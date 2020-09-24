@@ -192,6 +192,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                     Toast.makeText(applicationContext, "Uber requested", Toast.LENGTH_SHORT).show()
 
                     callUberButton?.setText("Cancel Uber")
+                    uberRequestActive = true
 
                 } else {
                     Toast.makeText(applicationContext, "Could not find location", Toast.LENGTH_SHORT).show()
