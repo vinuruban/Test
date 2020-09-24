@@ -51,16 +51,18 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
+        setTitle("Rider")
+
         callUberButton = findViewById<View>(R.id.callUberButton) as Button
 
         /** check if a request was made, and set uberRequestActive status **/
-        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid)
+
+            FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID"))
                 .addValueEventListener(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
                         if (dataSnapshot.exists()) { /** if request exist **/
                             uberRequestActive = true
                             callUberButton?.setText("Cancel Uber")
-
                         }
                     }
 
@@ -69,6 +71,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                         Log.w("Error", "loadPost:onCancelled", databaseError.toException())
                     }
                 })
+
 
     }
 

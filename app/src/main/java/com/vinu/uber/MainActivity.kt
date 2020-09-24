@@ -6,9 +6,7 @@ import android.util.Log
 import android.view.View
 import android.widget.Switch
 import android.widget.Toast
-import androidx.annotation.NonNull
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.gms.tasks.Task
 import com.google.firebase.auth.*
 import com.google.firebase.database.*
 
@@ -57,16 +55,38 @@ class MainActivity : AppCompatActivity() {
     fun redirectActivity() {
 
         if (auth.currentUser != null) { //IF USER WAS PREVIOUSLY LOGGED IN...
-            val intent = Intent(this, RiderActivity::class.java) //TODO - user could be a Driver too - pass in 'switch' boolean into RiderActivity and code the logic there
-            startActivity(intent)
+
+            /** check if current user is a rider or a driver **/
+            FirebaseDatabase.getInstance().getReference().child("userTypes").child("riders").child("userID")
+                    .addValueEventListener(object : ValueEventListener {
+                        override fun onDataChange(dataSnapshot: DataSnapshot) {
+                            val userID = dataSnapshot.value as String
+                            if (userID.equals(auth.currentUser!!.uid)) { /** if drivers/riders exist **/
+                                val intent = Intent(this@MainActivity, RiderActivity::class.java)
+                                intent.putExtra("userID", userID)
+                                startActivity(intent)
+                            } else {
+                                val intent = Intent(this@MainActivity, DriverActivity::class.java)
+                                intent.putExtra("userID", userID)
+                                startActivity(intent)
+                            }
+                        }
+
+                        override fun onCancelled(databaseError: DatabaseError) {
+                            // Getting Post failed, log a message
+                            Log.w("Error", "loadPost:onCancelled", databaseError.toException())
+                        }
+                    })
+
         } else { /** when letsGoClicked is triggered **/
 
             var userType = ""
             var intent: Intent? = null
 
+
             if (switch?.isChecked!!) { //if user is a driver...
                 userType = "driver"
-//                intent = Intent(this, DriverActivity::class.java)
+                intent = Intent(this, DriverActivity::class.java)
             } else { //if user is a rider...
                 userType = "rider"
                 intent = Intent(this, RiderActivity::class.java)
@@ -82,6 +102,7 @@ class MainActivity : AppCompatActivity() {
                             anonymousLogin(userType) /** logs user in - firebase auth **/
                             Toast.makeText(applicationContext, "Logged in: " + userID, Toast.LENGTH_SHORT).show()
 
+                            intent.putExtra("userID", userID)
                             startActivity(intent)
                         }
                         else { /** if drivers/riders don't exist in the database, sign them up **/
@@ -91,7 +112,8 @@ class MainActivity : AppCompatActivity() {
                                     .addValueEventListener(object : ValueEventListener {
                                         override fun onDataChange(dataSnapshot2: DataSnapshot) {
                                             if (dataSnapshot2.exists()) { /** if drivers/riders exist **/
-                                            val userID = dataSnapshot2.value as String
+                                                val userID = dataSnapshot2.value as String
+                                                intent.putExtra("userID", userID)
                                                 startActivity(intent)
                                             }
                                         }
