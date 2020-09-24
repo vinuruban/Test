@@ -9,6 +9,7 @@ import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.service.autofill.SaveCallback
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
@@ -23,7 +24,10 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import java.util.*
 
 class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -48,6 +52,24 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         mapFragment.getMapAsync(this)
 
         callUberButton = findViewById<View>(R.id.callUberButton) as Button
+
+        /** check if a request was made, and set uberRequestActive status **/
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid)
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(dataSnapshot: DataSnapshot) {
+                        if (dataSnapshot.exists()) { /** if request exist **/
+                            uberRequestActive = true
+                            callUberButton?.setText("Cancel Uber")
+
+                        }
+                    }
+
+                    override fun onCancelled(databaseError: DatabaseError) {
+                        // Getting Post failed, log a message
+                        Log.w("Error", "loadPost:onCancelled", databaseError.toException())
+                    }
+                })
+
     }
 
     /**
@@ -150,25 +172,30 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
 
     /** Call An Uber  */
     fun callUber(view: View?) {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
-            val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-            if (lastKnownLocation != null) { //if there exists a location, send request
+        if (uberRequestActive) { //if uber is active, cancel it
+            FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).removeValue()
+            Toast.makeText(applicationContext, "Uber cancelled", Toast.LENGTH_SHORT).show()
+            callUberButton.setText("Call An Uber")
+            uberRequestActive = false
+        } else { //else, request it
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+                locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
+                val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                if (lastKnownLocation != null) { //if there exists a location, send request
 
-//                val userID = intent.getStringExtra("userID") //TODO
-                val uniqueRequestID = UUID.randomUUID().toString()
+                    val uniqueRequestID = UUID.randomUUID().toString()
 
-                //pass in user
-                FirebaseDatabase.getInstance().getReference().child("uberRequests").child(uniqueRequestID).child("user").setValue(auth.currentUser?.uid)
+                    //pass in location
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("latitude").setValue(lastKnownLocation.latitude)
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("longitude").setValue(lastKnownLocation.longitude)
 
-                //pass in location
-                FirebaseDatabase.getInstance().getReference().child("uberRequests").child(uniqueRequestID).child("latitude").setValue(lastKnownLocation.latitude)
-                FirebaseDatabase.getInstance().getReference().child("uberRequests").child(uniqueRequestID).child("longitude").setValue(lastKnownLocation.longitude)
+                    Toast.makeText(applicationContext, "Uber requested", Toast.LENGTH_SHORT).show()
 
-                Toast.makeText(applicationContext, "Uber requested", Toast.LENGTH_SHORT).show()
+                    callUberButton?.setText("Cancel Uber")
 
-            } else {
-                Toast.makeText(applicationContext, "Could not find location", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(applicationContext, "Could not find location", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -177,7 +204,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         super.onBackPressed()
         Toast.makeText(
                 applicationContext,
-                "Logged out ${auth.currentUser?.uid}", //TODO
+                "Logged out ${auth.currentUser?.uid}",
                 Toast.LENGTH_SHORT
         ).show()
         auth.signOut()
