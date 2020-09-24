@@ -183,8 +183,6 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                 if (lastKnownLocation != null) { //if there exists a location, send request
 
-                    val uniqueRequestID = UUID.randomUUID().toString()
-
                     //pass in location
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("latitude").setValue(lastKnownLocation.latitude)
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("longitude").setValue(lastKnownLocation.longitude)
