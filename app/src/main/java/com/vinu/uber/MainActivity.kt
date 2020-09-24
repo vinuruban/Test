@@ -58,9 +58,8 @@ class MainActivity : AppCompatActivity() {
 
         if (auth.currentUser != null) { //IF USER WAS PREVIOUSLY LOGGED IN...
             val intent = Intent(this, RiderActivity::class.java) //TODO - user could be a Driver too - pass in 'switch' boolean into RiderActivity and code the logic there
-            intent.putExtra("userID", auth.currentUser!!.uid) //TODO
             startActivity(intent)
-        } else {
+        } else { /** when letsGoClicked is triggered **/
 
             var userType = ""
             var intent: Intent? = null
@@ -73,13 +72,16 @@ class MainActivity : AppCompatActivity() {
                 intent = Intent(this, RiderActivity::class.java)
             }
 
-            //to get data (userID from the Firebase Database) depending on the userType and pass it on
+            /** to get data (userID from the Firebase Database) depending on the userType and pass it on **/
             FirebaseDatabase.getInstance().getReference().child("userTypes").child(userType + "s").child("userID")
                 .addValueEventListener(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
-                        if (dataSnapshot.exists()) { /** if drivers/riders exist **/ //TODO - log anonymous user back in here
+                        if (dataSnapshot.exists()) { /** if drivers/riders exist **/
                             val userID = dataSnapshot.value as String
-                            intent?.putExtra("userID", userID)
+
+                            anonymousLogin(userType) /** logs user in - firebase auth **/
+                            Toast.makeText(applicationContext, "Logged in: " + userID, Toast.LENGTH_SHORT).show()
+
                             startActivity(intent)
                         }
                         else { /** if drivers/riders don't exist in the database, sign them up **/
@@ -90,7 +92,6 @@ class MainActivity : AppCompatActivity() {
                                         override fun onDataChange(dataSnapshot2: DataSnapshot) {
                                             if (dataSnapshot2.exists()) { /** if drivers/riders exist **/
                                             val userID = dataSnapshot2.value as String
-                                                intent?.putExtra("userID", userID)
                                                 startActivity(intent)
                                             }
                                         }
@@ -121,16 +122,14 @@ class MainActivity : AppCompatActivity() {
                         var userID = task.result?.user?.uid
                         FirebaseDatabase.getInstance().getReference().child("userTypes").child(userType  + "s").child("userID").setValue(userID) // REALTIME DATABASE - creates an "user" folder (if it wasn't previously created) and stores user details inside
 
-                        /** Convert an anonymous account to a permanent account - this will let us keep track of the account when logging out, and then sign them in again when required **/ //TODO - sort this out
-                        val credential = EmailAuthProvider.getCredential("test@test.co", "123456")
-                        task.result?.user?.linkWithCredential(credential) //TODO - auth was null, so test this out
+                        /** Convert an anonymous account to a permanent account - this will let us keep track of the account when logging out, and then sign them in again when required **/
+                        val credential = EmailAuthProvider.getCredential("${userType}@${userType}.com", "123456")
+                        task.result?.user?.linkWithCredential(credential)
                                 ?.addOnCompleteListener(this) { task ->
                                     if (task.isSuccessful) {
-                                        Log.i("SDFSDFDSFSD", "linkWithCredential:success")
+                                        Log.i("AnonymousToPermanent", "linkWithCredential:success")
                                     } else {
-                                        Log.i("SDFSDFDSFSD-FAIL", "linkWithCredential:fail")
-                                        Toast.makeText(baseContext, "Authentication failed.",
-                                                Toast.LENGTH_SHORT).show()
+                                        Log.i("AnonymousToPermanent", "linkWithCredential:fail")
                                     }
                                 }
 
@@ -140,8 +139,17 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-        Toast.makeText(applicationContext, "check: ", Toast.LENGTH_SHORT).show()
+    }
 
+    fun anonymousLogin(userType: String) {
+        auth.signInWithEmailAndPassword("${userType}@${userType}.com", "123456")
+                .addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) { //IF USER ALREADY EXISTS, LOG THEM IN
+                        Log.i("AnonymousLogin", "SignInWithEmailAndPassword:success")
+                    } else {
+                        Log.i("AnonymousLogin", "SignInWithEmailAndPassword:success")
+                    }
+                }
     }
 
 }

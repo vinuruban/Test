@@ -150,21 +150,22 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
 
     /** Call An Uber  */
     fun callUber(view: View?) {
-        Toast.makeText(applicationContext, "works", Toast.LENGTH_SHORT).show()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
             val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
             if (lastKnownLocation != null) { //if there exists a location, send request
 
-                val userID = intent.getStringExtra("userID") //TODO
+//                val userID = intent.getStringExtra("userID") //TODO
                 val uniqueRequestID = UUID.randomUUID().toString()
 
                 //pass in user
-                FirebaseDatabase.getInstance().getReference().child("uberRequests").child(uniqueRequestID).child("user").setValue(userID)
+                FirebaseDatabase.getInstance().getReference().child("uberRequests").child(uniqueRequestID).child("user").setValue(auth.currentUser?.uid)
 
                 //pass in location
                 FirebaseDatabase.getInstance().getReference().child("uberRequests").child(uniqueRequestID).child("latitude").setValue(lastKnownLocation.latitude)
                 FirebaseDatabase.getInstance().getReference().child("uberRequests").child(uniqueRequestID).child("longitude").setValue(lastKnownLocation.longitude)
+
+                Toast.makeText(applicationContext, "Uber requested", Toast.LENGTH_SHORT).show()
 
             } else {
                 Toast.makeText(applicationContext, "Could not find location", Toast.LENGTH_SHORT).show()
