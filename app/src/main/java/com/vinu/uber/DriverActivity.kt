@@ -20,6 +20,7 @@ import com.google.firebase.database.ChildEventListener
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
+import kotlin.properties.Delegates
 
 class DriverActivity : AppCompatActivity() {
 
@@ -33,8 +34,8 @@ class DriverActivity : AppCompatActivity() {
     var locationListener: LocationListener? = null
 
     //driver's location
-    var driverLatitude: Double? = null
-    var driverLongitude: Double? = null
+    var driverLatitude by Delegates.notNull<Double>() /** temporary solution to avoid NullPointerException when declaring this variable **/
+    var driverLongitude by Delegates.notNull<Double>() /** temporary solution to avoid NullPointerException when declaring this variable **/
 
     //rider's location
     var riderLatitude: Double? = null
@@ -84,13 +85,9 @@ class DriverActivity : AppCompatActivity() {
                         riderLatitude = snapshot.child("latitude").value as Double //within the 'snaps' tab of Firebase Database, we retrieve the lat list of requests
                         riderLongitude = snapshot.child("longitude").value as Double //within the 'snaps' tab of Firebase Database, we retrieve the lat list of requests //TODO - cannot cancel uber sometimes
 
+                        Log.i("Location", "Rider {$riderLatitude : $riderLongitude}, Driver {$driverLatitude : $driverLongitude}")
 
-                        Log.i("sdfsdf", "$riderLatitude : $riderLongitude : $driverLatitude : $driverLongitude")
-                        Toast.makeText(applicationContext, "sdfdsf" + riderLatitude + " : " + riderLongitude + " : " + driverLatitude + " : " + driverLongitude, Toast.LENGTH_SHORT).show()
-
-
-
-                        distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + " K") //TODO - add longitude
+                        distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + "km") //calculates distance between rider and driver
                         requests.add(snapshot) //to store data of the request that was clicked on, from the Firebase Database
                         adapter.notifyDataSetChanged()
                     }
@@ -172,20 +169,7 @@ class DriverActivity : AppCompatActivity() {
         auth.signOut()
     }
 
-//    fun distance(lat1: Double, lon1: Double, lat2: Double, lon2: Double, el1: Double, el2: Double): Double {
-//        val R = 6371 // Radius of the earth
-//        val latDistance = Math.toRadians(lat2 - lat1)
-//        val lonDistance = Math.toRadians(lon2 - lon1)
-//        val a = (Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
-//                + (Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-//                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2)))
-//        val c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-//        var distance = R * c * 1000 // convert to meters
-//        val height = el1 - el2
-//        distance = Math.pow(distance, 2.0) + Math.pow(height, 2.0)
-//        return Math.sqrt(distance)
-//    }
-
+    /** calculates distance between rider and driver **/
     fun distance(lat1: Double, lon1: Double, lat2: Double, lon2: Double, unit: String): Double {
         return if (lat1 == lat2 && lon1 == lon2) {
             0.0
@@ -200,7 +184,7 @@ class DriverActivity : AppCompatActivity() {
             } else if (unit == "N") {
                 dist = dist * 0.8684
             }
-            dist
+            String.format("%.3f", dist).toDouble() //rounds dist to 2 decimal places
         }
     }
 
