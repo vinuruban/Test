@@ -82,8 +82,9 @@ class DriverActivity : AppCompatActivity() {
                 .addChildEventListener(object :
                         ChildEventListener {
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                        riderLatitude = snapshot.child("latitude").value as Double //within the 'snaps' tab of Firebase Database, we retrieve the lat list of requests
-                        riderLongitude = snapshot.child("longitude").value as Double //within the 'snaps' tab of Firebase Database, we retrieve the lat list of requests //TODO - cannot cancel uber sometimes
+                        /** when there is a new uber request **/
+                        riderLatitude = snapshot.child("latitude").value as Double //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
+                        riderLongitude = snapshot.child("longitude").value as Double //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - cannot cancel uber sometimes
 
                         Log.i("Location", "Rider {$riderLatitude : $riderLongitude}, Driver {$driverLatitude : $driverLongitude}")
 
@@ -97,7 +98,7 @@ class DriverActivity : AppCompatActivity() {
                     }
 
                     override fun onChildRemoved(snapshot: DataSnapshot) {
-                        /** to update the UI after the snaps are deleted - see onBackPressed() of OpenSnapActivity **/
+                        /** to update the UI after the uber request gets cancelled **/
                         var index = 0
                         for (snap: DataSnapshot in requests) { //looping through to help find the index. This will be used to delete the entry in 'requestsList' and 'requests' ArrayList
                             if (snap.key == snapshot?.key) {
