@@ -23,8 +23,9 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
 
-    var locationManager: LocationManager? = null
-    var locationListener: LocationListener? = null
+    /** No need for the bottom since this activity will only show a plain map view, where there is no need for regular refresh of the map (for navigation) **/
+//    var locationManager: LocationManager? = null
+//    var locationListener: LocationListener? = null
 
     var riderLatitude: Double? = null
     var riderLongitude: Double? = null
@@ -49,15 +50,6 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
         driverLongitude = intent.getDoubleExtra("driverLongitude", 0.0)
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
@@ -94,11 +86,8 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
             if (riderActive!!) {
                 mMap.addMarker(MarkerOptions().position(userLocation).title("Rider's location"))
             } else {
-                mMap.addMarker(MarkerOptions().position(userLocation).title("Driver's location").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
+                mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
             }
-
-//            // newLatLngZoom to zoom into map - from 1 to 20, where 1 is totally zoomed out and 20 is totally zoomed in
-//            mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 15f))
         }
     }
 
@@ -106,8 +95,9 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
     fun acceptRequest(view: View?) {
         val riderID = intent.getStringExtra("riderID")
 
-        //amend uberRequest tab in Firebase Database
-        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID).child("driverAccepted").setValue(true)
+        //pass driver's location in uberRequest - this will also alert the rider and change the map view in RiderActivity.kt
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID).child("driverLocation").child("latitude").setValue(driverLatitude)
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID).child("driverLocation").child("longitude").setValue(driverLongitude)
 
         val uri = "http://maps.google.com/maps?saddr=" + driverLatitude + "," + driverLongitude + "&daddr=" + riderLatitude + "," + riderLongitude
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))

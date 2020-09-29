@@ -22,6 +22,7 @@ import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -56,7 +57,6 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         callUberButton = findViewById<View>(R.id.callUberButton) as Button
 
         /** check if a request was made, and set uberRequestActive status **/
-
             FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID"))
                 .addValueEventListener(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
@@ -75,15 +75,6 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
 
     }
 
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
 
@@ -124,37 +115,82 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         // Change map type
         mMap.mapType = GoogleMap.MAP_TYPE_HYBRID
 
-        // Add a marker at USER'S LOCATION and move the camera to it!
-        val userLocation = LatLng(location.latitude, location.longitude)
+        /** change Map view depending on whether the driver has accepted the Uber request or not **/
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("driverLocation")
+                .addValueEventListener(object : ValueEventListener {
+                    override fun onDataChange(dataSnapshot: DataSnapshot) {
 
-        // icon(... added to change the colour of the marker
-        mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
+                        /** if a request wasn't made, or if driver hasn't accepted the Uber request yet... **/
+                        if (!dataSnapshot.exists()) {
+                            // Add a marker at USER'S LOCATION and move the camera to it!
+                            val userLocation = LatLng(location.latitude, location.longitude)
 
-        // newLatLngZoom to zoom into map - from 1 to 20, where 1 is totally zoomed out and 20 is totally zoomed in
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 18f))
+                            // icon(... added to change the colour of the marker
+                            mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
 
-        //CODE BELOW CONVERTS THE LAT AND LONG TO ACTUAL ADDRESS
-        if (counter == 0) {
-            val geocoder = Geocoder(applicationContext, Locale.getDefault()) //Locale.getDefault() gets address from the specific country the phone is in
-            try {
-                val addressList = geocoder.getFromLocation(location.latitude, location.longitude, 1)
+                            // newLatLngZoom to zoom into map - from 1 to 20, where 1 is totally zoomed out and 20 is totally zoomed in
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(userLocation, 18f))
 
-                //Address[addressLines=[0:"398 Alexandra Ave, Rayners Lane, Harrow HA2 9UF, UK"],feature=398,admin=England,sub-admin=Greater London,locality=null,thoroughfare=Alexandra Avenue,postalCode=HA2 9UF,countryCode=GB,countryName=United Kingdom,hasLatitude=true,latitude=51.572310699999996,hasLongitude=true,longitude=-0.3708033,phone=null,url=null,extras=null]
+                            //CODE BELOW CONVERTS THE LAT AND LONG TO ACTUAL ADDRESS
+                            if (counter == 0) {
+                                val geocoder = Geocoder(applicationContext, Locale.getDefault()) //Locale.getDefault() gets address from the specific country the phone is in
+                                try {
+                                    val addressList = geocoder.getFromLocation(location.latitude, location.longitude, 1)
 
-                // ^ ^ code below will retrieve data from here. We will use getAddressLine(0) since that will simply get the full address
-                // ^ ^ e.g. we can do getFeatureName(), getAdminArea(), getThoroughFare(), etc. instead of getAddressLine(0) to get the specifics
-                var address: String? = ""
-                if (addressList != null && addressList.size > 0) {
-                    if (addressList[0].getAddressLine(0) != null) {
-                        address = addressList[0].getAddressLine(0)
-                        Toast.makeText(applicationContext, address, Toast.LENGTH_SHORT).show()
+                                    //Address[addressLines=[0:"398 Alexandra Ave, Rayners Lane, Harrow HA2 9UF, UK"],feature=398,admin=England,sub-admin=Greater London,locality=null,thoroughfare=Alexandra Avenue,postalCode=HA2 9UF,countryCode=GB,countryName=United Kingdom,hasLatitude=true,latitude=51.572310699999996,hasLongitude=true,longitude=-0.3708033,phone=null,url=null,extras=null]
+
+                                    // ^ ^ code below will retrieve data from here. We will use getAddressLine(0) since that will simply get the full address
+                                    // ^ ^ e.g. we can do getFeatureName(), getAdminArea(), getThoroughFare(), etc. instead of getAddressLine(0) to get the specifics
+                                    var address: String? = ""
+                                    if (addressList != null && addressList.size > 0) {
+                                        if (addressList[0].getAddressLine(0) != null) {
+                                            address = addressList[0].getAddressLine(0)
+                                            Toast.makeText(applicationContext, address, Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                                counter = 1
+                            }
+                        } else {
+                        /** when driver has accepted the Uber request... **/
+                            //Rider's location
+                            val riderLatitude = location.latitude
+                            val riderLongitude = location.longitude
+
+                            //Driver's location
+                            val driverLatitude = dataSnapshot.child("latitude").value as Double
+                            val driverLongitude = dataSnapshot.child("longitude").value as Double
+
+                            /** Set map for Rider **/
+                            val riderLocation = Location(LocationManager.GPS_PROVIDER) //creates NEW EMPTY location
+                            riderLocation.latitude = riderLatitude //adds latitude to the empty location!
+                            riderLocation.longitude = riderLongitude //adds longitude to the empty location!
+                            setLocation(riderLocation, true)
+
+                            /** Set map for Driver **/
+                            val driverLocation = Location(LocationManager.GPS_PROVIDER) //creates NEW EMPTY location
+                            driverLocation.latitude = driverLatitude //adds latitude to the empty location!
+                            driverLocation.longitude = driverLongitude //adds longitude to the empty location!
+                            setLocation(driverLocation, false)
+
+                            /** Move camera to include both markers **/
+                            val riderAndDriver = LatLngBounds(LatLng(riderLatitude, riderLongitude), LatLng(driverLatitude, driverLongitude))
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200))
+
+                            /** since request is accepted, rider cannot cancel uber anymore **/
+                            callUberButton?.setText("Your Uber is on its way...")
+                            callUberButton?.setClickable(false)
+                            callUberButton?.setEnabled(false)
+                        }
                     }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            counter = 1
-        }
+
+                    override fun onCancelled(databaseError: DatabaseError) {
+                        // Getting Post failed, log a message
+                        Log.w("Error", "loadPost:onCancelled", databaseError.toException())
+                    }
+                })
     }
 
     /** WHEN THE USERS ACCEPT/DENY LOCATION REQUEST, THE CODE BELOW IS EXECUTED  */
@@ -200,6 +236,24 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 } else {
                     Toast.makeText(applicationContext, "Could not find location", Toast.LENGTH_SHORT).show()
                 }
+            }
+        }
+    }
+
+    /** set this map type when driver accepts the uber request **/
+    fun setLocation(location: Location?, riderActive: Boolean?) {
+        if (location != null) {
+
+            // Change map type
+            mMap.mapType = GoogleMap.MAP_TYPE_HYBRID
+
+            // Add a marker at USER'S LOCATION and move the camera to it!
+            val userLocation = LatLng(location.latitude, location.longitude)
+
+            if (riderActive!!) {
+                mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!"))
+            } else {
+                mMap.addMarker(MarkerOptions().position(userLocation).title("Rider's location").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
             }
         }
     }
