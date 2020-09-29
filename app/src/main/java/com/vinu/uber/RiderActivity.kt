@@ -51,7 +51,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        setTitle("Rider")
+        setTitle("Rider Map")
 
         callUberButton = findViewById<View>(R.id.callUberButton) as Button
 

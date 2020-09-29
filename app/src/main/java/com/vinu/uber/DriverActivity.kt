@@ -1,6 +1,7 @@
 package com.vinu.uber
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
@@ -58,6 +59,9 @@ class DriverActivity : AppCompatActivity() {
             override fun onProviderDisabled(s: String) {}
         }
 
+        driverLatitude = 0.0 //todo
+        driverLongitude = 0.0 //todo
+
         /** CODE BELOW IS THE POP UP WHICH ASKS FOR THE LOCATION PERMISSION WHEN THE APP STARTS, USERS CAN CHOOSE TO ACCEPT/DENY REQUEST **/
         if (Build.VERSION.SDK_INT < 23) { //IF API < 23, PROVIDE LOCATION and we won't need to manually ask for permission
             locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
@@ -68,8 +72,8 @@ class DriverActivity : AppCompatActivity() {
                 locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
                 //BELOW GETS LAST KNOWN LOCATION AT APP START
                 val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                driverLatitude = lastKnownLocation.latitude //TODO - not picked up
-                driverLongitude = lastKnownLocation.longitude //TODO - not picked up
+                driverLatitude = lastKnownLocation.latitude //gets driver's location
+                driverLongitude = lastKnownLocation.longitude //gets driver's location
             }
         }
 
@@ -125,16 +129,17 @@ class DriverActivity : AppCompatActivity() {
         requestListView?.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
             val snapshot = requests.get(position) //get data of the request that was clicked on
 
-//            var intent = Intent(this, OpenSnapActivity::class.java)
-//
-//            intent.putExtra("uniqueImageName", snapshot.child("imageName").value as String)
-//            intent.putExtra("caption", snapshot.child("caption").value as String)
-//            intent.putExtra("snapUUID", snapshot.key) //needed to help delete the snap after viewing it
-//
-//            startActivity(intent)
+            var intent = Intent(this, DriverMapActivity::class.java)
 
-            Toast.makeText(applicationContext, "Clicked on the request", Toast.LENGTH_SHORT).show()
+            //rider's location
+            intent.putExtra("riderLatitude", snapshot.child("latitude").value as Double)
+            intent.putExtra("riderLongitude", snapshot.child("longitude").value as Double)
 
+            //driver's location
+            intent.putExtra("driverLatitude", driverLatitude)
+            intent.putExtra("driverLongitude", driverLongitude)
+
+            startActivity(intent)
         }
 
     }
@@ -147,17 +152,17 @@ class DriverActivity : AppCompatActivity() {
                 if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
                     val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                    driverLatitude = lastKnownLocation.latitude //TODO - not picked up
-                    driverLongitude = lastKnownLocation.longitude //TODO - not picked up
+                    driverLatitude = lastKnownLocation.latitude
+                    driverLongitude = lastKnownLocation.longitude
                 }
             }
         }
     }
 
     fun updateListView(location: Location) {
-//        requestList.clear() //clear previous requests
-//        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, requestList)
-//        requestListView?.adapter = adapter
+        requestListView = findViewById(R.id.listView)
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, distanceList)
+        requestListView?.adapter = adapter
     }
 
     override fun onBackPressed() {
@@ -185,7 +190,7 @@ class DriverActivity : AppCompatActivity() {
             } else if (unit == "N") {
                 dist = dist * 0.8684
             }
-            String.format("%.3f", dist).toDouble() //rounds dist to 2 decimal places
+            String.format("%.2f", dist).toDouble() //rounds dist to 2 decimal places
         }
     }
 
