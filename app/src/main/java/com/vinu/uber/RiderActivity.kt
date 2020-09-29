@@ -188,6 +188,10 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("latitude").setValue(lastKnownLocation.latitude)
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("longitude").setValue(lastKnownLocation.longitude)
 
+                    //to know if driver has accepted rider's request
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("riderID").setValue(auth.currentUser!!.uid)
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("driverAccepted").setValue(false)
+
                     Toast.makeText(applicationContext, "Uber requested", Toast.LENGTH_SHORT).show()
 
                     callUberButton?.setText("Cancel Uber")

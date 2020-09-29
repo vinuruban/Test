@@ -16,6 +16,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.database.FirebaseDatabase
 
 
 class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -39,7 +40,7 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
                 .findFragmentById(R.id.map) as SupportMapFragment
         mapFragment.getMapAsync(this)
 
-        setTitle("Location")
+        setTitle("Driver's Map")
 
         riderLatitude = intent.getDoubleExtra("riderLatitude", 0.0)
         riderLongitude = intent.getDoubleExtra("riderLongitude", 0.0)
@@ -101,8 +102,13 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
         }
     }
 
-    /** Navigate to Google Maps **/
-    fun navigateToMaps(view: View?) {
+    /** Accept Uber request and Navigate to Google Maps **/
+    fun acceptRequest(view: View?) {
+        val riderID = intent.getStringExtra("riderID")
+
+        //amend uberRequest tab in Firebase Database
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID).child("driverAccepted").setValue(true)
+
         val uri = "http://maps.google.com/maps?saddr=" + driverLatitude + "," + driverLongitude + "&daddr=" + riderLatitude + "," + riderLongitude
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))
         startActivity(intent)

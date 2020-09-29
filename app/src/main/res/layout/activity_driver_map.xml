@@ -25,10 +25,10 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
-        android:onClick="navigateToMaps"
+        android:onClick="acceptRequest"
         android:paddingLeft="16dp"
         android:paddingRight="16dp"
-        android:text="Go to Google Maps"
+        android:text="Accept request"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

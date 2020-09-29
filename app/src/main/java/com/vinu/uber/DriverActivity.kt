@@ -139,6 +139,9 @@ class DriverActivity : AppCompatActivity() {
             intent.putExtra("driverLatitude", driverLatitude)
             intent.putExtra("driverLongitude", driverLongitude)
 
+            //send Rider's user ID
+            intent.putExtra("riderID", snapshot.child("riderID").value as String)
+
             startActivity(intent)
         }
 
