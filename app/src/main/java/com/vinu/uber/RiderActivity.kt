@@ -82,7 +82,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
 
         locationListener = object : LocationListener {
             override fun onLocationChanged(location: Location) {
-                updateMap(location)
+                updateMap(location) //TODO - doesn't update when driver moves
             }
 
             override fun onStatusChanged(s: String, i: Int, bundle: Bundle) {}
@@ -107,7 +107,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     /** to avoid repetition of code  */
-    fun updateMap(location: Location) {
+    fun updateMap(location: Location) { //TODO - doesn't update when driver moves
 
         // Clears previous map
         mMap.clear()
@@ -224,9 +224,8 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("latitude").setValue(lastKnownLocation.latitude)
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("longitude").setValue(lastKnownLocation.longitude)
 
-                    //to know if driver has accepted rider's request
+                    //this is used in the acceptRequest() of DriverMapActivity
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("riderID").setValue(auth.currentUser!!.uid)
-                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("driverAccepted").setValue(false)
 
                     Toast.makeText(applicationContext, "Uber requested", Toast.LENGTH_SHORT).show()
 

@@ -23,7 +23,7 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
 
-    /** No need for the bottom since this activity will only show a plain map view, where there is no need for regular refresh of the map (for navigation) **/
+    /** No need for the bottom since we don't need to find location in this activity. Instead, it is passed from the DriverActivity via Intent**/
 //    var locationManager: LocationManager? = null
 //    var locationListener: LocationListener? = null
 

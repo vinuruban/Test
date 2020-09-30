@@ -29,29 +29,44 @@ class DriverActivity : AppCompatActivity() {
     var requestListView: ListView? = null
 
     var distanceList: ArrayList<String> = ArrayList() //users who requested an uber will be logged here
+    var adapter: ArrayAdapter<String>? = null
     var requests: ArrayList<DataSnapshot> = ArrayList() //to retrieve data from the Firebase Database of the request that's clicked on
 
+    /** although map isn't used, we still need to get location of Rider and Driver to calculate distance. Thus, the below is needed **/
     var locationManager: LocationManager? = null
     var locationListener: LocationListener? = null
 
     //driver's location
-    var driverLatitude by Delegates.notNull<Double>() /** temporary solution to avoid NullPointerException when declaring this variable **/
-    var driverLongitude by Delegates.notNull<Double>() /** temporary solution to avoid NullPointerException when declaring this variable **/
+    var driverLatitude: Double? = 0.0 /** temporary solution to avoid NullPointerException when declaring this variable **/
+    var driverLongitude: Double? = 0.0 /** temporary solution to avoid NullPointerException when declaring this variable **/
 
     //rider's location
-    var riderLatitude: Double? = null
-    var riderLongitude: Double? = null
+    var riderLatitude: Double? = 0.0
+    var riderLongitude: Double? = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_driver)
 
+        requestListView = findViewById(R.id.listView)
+        adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, distanceList)
+        requestListView?.adapter = adapter
+
         /** set location manager and listener **/
         locationManager = this.getSystemService(LOCATION_SERVICE) as LocationManager
 
-        locationListener = object : LocationListener {
+        locationListener = object : LocationListener { /** what to do when location changes **/
             override fun onLocationChanged(location: Location) {
-                updateListView(location)
+
+//                distanceList.clear() //clear previous data
+//
+//                driverLatitude = location.latitude //gets driver's location
+//                driverLongitude = location.longitude //gets driver's location
+//
+//                /************ Once both driver and rider locations are found, calculate distance! ************/
+//                distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + "km") //calculates distance between rider and driver
+//                requests.add(snapShot!!) //to store data of the request that was clicked on, from the Firebase Database
+//                adapter!!.notifyDataSetChanged() /** to update listview with the new driverLatitude & driverLongitude **/
             }
 
             override fun onStatusChanged(s: String, i: Int, bundle: Bundle) {}
@@ -59,42 +74,38 @@ class DriverActivity : AppCompatActivity() {
             override fun onProviderDisabled(s: String) {}
         }
 
-        driverLatitude = 0.0 //todo
-        driverLongitude = 0.0 //todo
-
-        /** CODE BELOW IS THE POP UP WHICH ASKS FOR THE LOCATION PERMISSION WHEN THE APP STARTS, USERS CAN CHOOSE TO ACCEPT/DENY REQUEST **/
-        if (Build.VERSION.SDK_INT < 23) { //IF API < 23, PROVIDE LOCATION and we won't need to manually ask for permission
-            locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
-        } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { //IF PERMISSION WASNT GRANTED, ASK FOR PERMISSION
-                ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
-            } else { //IF PERMISSION IS GRANTED, PROVIDE LOCATION
-                locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
-                //BELOW GETS LAST KNOWN LOCATION AT APP START
-                val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-                driverLatitude = lastKnownLocation.latitude //gets driver's location
-                driverLongitude = lastKnownLocation.longitude //gets driver's location
-            }
-        }
-
-        requestListView = findViewById(R.id.listView)
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, distanceList)
-        requestListView?.adapter = adapter
-
-        /** load all requests **/
+        /** load all locations **/
         FirebaseDatabase.getInstance().getReference().child("uberRequests")
                 .addChildEventListener(object :
                         ChildEventListener {
-                    override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
-                        /** when there is a new uber request **/
+                    override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) { /** when uber request is made **/
+
+                        /************ GET RIDER'S LOCATION ************/
                         riderLatitude = snapshot.child("latitude").value as Double //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
-                        riderLongitude = snapshot.child("longitude").value as Double //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - cannot cancel uber sometimes
+                        riderLongitude = snapshot.child("longitude").value as Double //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - fix null value
 
-                        Log.i("Location", "Rider {$riderLatitude : $riderLongitude}, Driver {$driverLatitude : $driverLongitude}")
 
-                        distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + "km") //calculates distance between rider and driver
-                        requests.add(snapshot) //to store data of the request that was clicked on, from the Firebase Database
-                        adapter.notifyDataSetChanged()
+                        /************ GET DRIVERS'S LOCATION ************/
+                        // CODE BELOW IS THE POP UP WHICH ASKS FOR THE LOCATION PERMISSION WHEN THE APP STARTS, USERS CAN CHOOSE TO ACCEPT/DENY REQUEST
+                        if (Build.VERSION.SDK_INT < 23) { //IF API < 23, PROVIDE LOCATION and we won't need to manually ask for permission
+                            locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
+                        } else {
+                            if (ContextCompat.checkSelfPermission(this@DriverActivity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { //IF PERMISSION WASNT GRANTED, ASK FOR PERMISSION
+                                requests.add(snapshot)
+                                ActivityCompat.requestPermissions(this@DriverActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1) /** this triggers the onRequestPermissionsResult() **/
+                            } else { //IF PERMISSION IS GRANTED, PROVIDE LOCATION
+                                locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
+                                //BELOW GETS LAST KNOWN LOCATION AT APP START
+                                val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                                driverLatitude = lastKnownLocation.latitude //gets driver's location
+                                driverLongitude = lastKnownLocation.longitude //gets driver's location
+
+                                /************ Once both driver and rider locations are found, calculate distance! ************/
+                                distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + "km") //calculates distance between rider and driver
+                                requests.add(snapshot) //to store data of the request that was clicked on, from the Firebase Database
+                                adapter!!.notifyDataSetChanged() /** to update listview with the new driverLatitude & driverLongitude **/
+                            }
+                        }
                     }
 
                     override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {
@@ -111,7 +122,7 @@ class DriverActivity : AppCompatActivity() {
                             }
                             index++
                         }
-                        adapter.notifyDataSetChanged()
+                        adapter!!.notifyDataSetChanged()
                     }
 
                     override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {
@@ -157,15 +168,13 @@ class DriverActivity : AppCompatActivity() {
                     val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                     driverLatitude = lastKnownLocation.latitude
                     driverLongitude = lastKnownLocation.longitude
+
+                    /************ Once both driver and rider locations are found, calculate distance! ************/
+                    distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + "km") //calculates distance between rider and driver
+                    adapter!!.notifyDataSetChanged() /** to update listview with the new driverLatitude & driverLongitude **/
                 }
             }
         }
-    }
-
-    fun updateListView(location: Location) {
-        requestListView = findViewById(R.id.listView)
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, distanceList)
-        requestListView?.adapter = adapter
     }
 
     override fun onBackPressed() {
