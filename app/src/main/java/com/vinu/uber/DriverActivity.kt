@@ -91,7 +91,7 @@ class DriverActivity : AppCompatActivity() {
                             locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
                         } else {
                             if (ContextCompat.checkSelfPermission(this@DriverActivity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) { //IF PERMISSION WASNT GRANTED, ASK FOR PERMISSION
-                                requests.add(snapshot)
+                                requests.add(snapshot) /** snapshot passed in here instead since it isn't accessible outside **/
                                 ActivityCompat.requestPermissions(this@DriverActivity, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1) /** this triggers the onRequestPermissionsResult() **/
                             } else { //IF PERMISSION IS GRANTED, PROVIDE LOCATION
                                 locationManager!!.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0f, locationListener)
