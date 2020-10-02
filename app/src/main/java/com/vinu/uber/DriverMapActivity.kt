@@ -25,7 +25,7 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     /** No need for the bottom since we don't need to find location in this activity. Instead, it is passed from the DriverActivity via Intent**/
 //    var locationManager: LocationManager? = null
-//    var locationListener: LocationListener? = null
+//    var locationListener: LocationListener? = null //todo - add locationListener to update map when rider moves (maybe)
 
     var riderLatitude: Double? = null
     var riderLongitude: Double? = null

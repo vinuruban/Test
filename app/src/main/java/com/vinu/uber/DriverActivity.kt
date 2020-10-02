@@ -44,6 +44,8 @@ class DriverActivity : AppCompatActivity() {
     var riderLatitude: Double? = 0.0
     var riderLongitude: Double? = 0.0
 
+    var mSnapshot: DataSnapshot? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_driver)
@@ -56,18 +58,22 @@ class DriverActivity : AppCompatActivity() {
         locationManager = this.getSystemService(LOCATION_SERVICE) as LocationManager
 
         locationListener = object : LocationListener { /** what to do when location changes **/
-            override fun onLocationChanged(location: Location) {
+            override fun onLocationChanged(location: Location) { //TODO - when driverLocation changes, make sure this refreshes rider's map
+            if(location.latitude != driverLatitude) {
+                if (location.longitude != driverLongitude) {
+                    distanceList.clear() //clear previous data
 
-//                distanceList.clear() //clear previous data
-//
-//                driverLatitude = location.latitude //gets driver's location
-//                driverLongitude = location.longitude //gets driver's location
-//
-//                /************ Once both driver and rider locations are found, calculate distance! ************/
-//                distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + "km") //calculates distance between rider and driver
-//                requests.add(snapShot!!) //to store data of the request that was clicked on, from the Firebase Database
-//                adapter!!.notifyDataSetChanged() /** to update listview with the new driverLatitude & driverLongitude **/
+                    driverLatitude = location.latitude //gets driver's location
+                    driverLongitude = location.longitude //gets driver's location
+
+                    /************ Once both driver and rider locations are found, calculate distance! ************/
+                    distanceList.add(distance(riderLatitude!!, riderLongitude!!, driverLatitude!!, driverLongitude!!, "K").toString() + "km") //calculates distance between rider and driver
+                    requests.add(mSnapshot!!) //to store data of the request that was clicked on, from the Firebase Database
+                    adapter!!.notifyDataSetChanged()
+                    /** to update listview with the new driverLatitude & driverLongitude **/
+                }
             }
+        }
 
             override fun onStatusChanged(s: String, i: Int, bundle: Bundle) {}
             override fun onProviderEnabled(s: String) {}
@@ -80,10 +86,12 @@ class DriverActivity : AppCompatActivity() {
                         ChildEventListener {
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) { /** when uber request is made **/
 
+                        mSnapshot = snapshot
+
                         /************ GET RIDER'S LOCATION ************/
                         val locationAsString = snapshot.child("location").value as String
                         riderLatitude = (locationAsString.split(";")[0]+"").toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
-                        riderLongitude = (locationAsString.split(";")[1]+"").toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - fix null value
+                        riderLongitude = (locationAsString.split(";")[1]+"").toDouble() //also feasible with deserializer
 
                         /************ GET DRIVERS'S LOCATION ************/
                         // CODE BELOW IS THE POP UP WHICH ASKS FOR THE LOCATION PERMISSION WHEN THE APP STARTS, USERS CAN CHOOSE TO ACCEPT/DENY REQUEST

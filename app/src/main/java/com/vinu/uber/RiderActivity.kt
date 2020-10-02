@@ -43,6 +43,13 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
     var callUberButton: Button? = null
     var uberRequestActive = false //to track whether an uber was called or not
 
+    //driver's location
+    var driverLatitude: Double? = 0.0
+    var driverLongitude: Double? = 0.0
+
+    //rider's location
+    var riderLatitude: Double? = 0.0
+    var riderLongitude: Double? = 0.0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,8 +88,12 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         locationManager = this.getSystemService(LOCATION_SERVICE) as LocationManager
 
         locationListener = object : LocationListener {
-            override fun onLocationChanged(location: Location) {
-                updateMap(location) //TODO - doesn't update when driver moves
+            override fun onLocationChanged(location: Location) { //TODO - when riderLocation changes, make sure this refreshes driver's map
+                if(location.latitude != riderLatitude) {
+                    if(location.longitude != riderLongitude) {
+                        updateMap(location) /** listener is always being triggered when the emulator, so only refresh map if location changes!!! **/
+                    }
+                }
             }
 
             override fun onStatusChanged(s: String, i: Int, bundle: Bundle) {}
@@ -107,7 +118,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     /** to avoid repetition of code  */
-    fun updateMap(location: Location) { //TODO - doesn't update when driver moves
+    fun updateMap(location: Location) {
 
         // Clears previous map
         mMap.clear()
@@ -120,10 +131,15 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 .addValueEventListener(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
 
+                        //rider's location
+                        riderLatitude = location.latitude
+                        riderLongitude = location.longitude
+
                         /** if a request wasn't made, or if driver hasn't accepted the Uber request yet... **/
                         if (!dataSnapshot.exists()) {
+
                             // Add a marker at USER'S LOCATION and move the camera to it!
-                            val userLocation = LatLng(location.latitude, location.longitude)
+                            val userLocation = LatLng(riderLatitude!!, riderLongitude!!)
 
                             // icon(... added to change the colour of the marker
                             mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
@@ -155,28 +171,25 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                             }
                         } else {
                         /** when driver has accepted the Uber request... **/
-                            //Rider's location
-                            val riderLatitude = location.latitude
-                            val riderLongitude = location.longitude
 
                             //Driver's location
-                            val driverLatitude = dataSnapshot.child("latitude").value as Double
-                            val driverLongitude = dataSnapshot.child("longitude").value as Double
+                            driverLatitude = dataSnapshot.child("latitude").value as Double
+                            driverLongitude = dataSnapshot.child("longitude").value as Double
 
                             /** Set map for Rider **/
                             val riderLocation = Location(LocationManager.GPS_PROVIDER) //creates NEW EMPTY location
-                            riderLocation.latitude = riderLatitude //adds latitude to the empty location!
-                            riderLocation.longitude = riderLongitude //adds longitude to the empty location!
+                            riderLocation.latitude = riderLatitude as Double //adds latitude to the empty location!
+                            riderLocation.longitude = riderLongitude as Double //adds longitude to the empty location!
                             setLocation(riderLocation, true)
 
                             /** Set map for Driver **/
                             val driverLocation = Location(LocationManager.GPS_PROVIDER) //creates NEW EMPTY location
-                            driverLocation.latitude = driverLatitude //adds latitude to the empty location!
-                            driverLocation.longitude = driverLongitude //adds longitude to the empty location!
+                            driverLocation.latitude = driverLatitude as Double //adds latitude to the empty location!
+                            driverLocation.longitude = driverLongitude as Double //adds longitude to the empty location!
                             setLocation(driverLocation, false)
 
                             /** Move camera to include both markers **/
-                            val riderAndDriver = LatLngBounds(LatLng(riderLatitude, riderLongitude), LatLng(driverLatitude, driverLongitude))
+                            val riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
                             mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200))
 
                             /** since request is accepted, rider cannot cancel uber anymore **/
@@ -220,7 +233,8 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                 if (lastKnownLocation != null) { //if there exists a location, send request
 
-                    val locationAsString = "${lastKnownLocation.latitude};${lastKnownLocation.longitude};" //passing as 2 different values didn't work, so passed it together as a String
+                    //passing as 2 different values didn't work, so passed it together as a String
+                    val locationAsString = "${lastKnownLocation.latitude};${lastKnownLocation.longitude};" // also feasible with serializer
 
                     //pass in location
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("location").setValue(locationAsString)
