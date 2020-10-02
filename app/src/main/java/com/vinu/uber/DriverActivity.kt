@@ -80,20 +80,10 @@ class DriverActivity : AppCompatActivity() {
                         ChildEventListener {
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) { /** when uber request is made **/
 
-                        Log.i("before", snapshot.child("latitude").value.toString())
-                        Log.i("before", snapshot.child("longitude").value.toString()) //todo - this is null after cancelling and reordering uber
-
-
                         /************ GET RIDER'S LOCATION ************/
-                        if (snapshot.child("longitude").value != null) {
-                            riderLatitude = snapshot.child("latitude").value.toString().toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
-                            riderLongitude = snapshot.child("longitude").value.toString().toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - fix null value
-                        } else {
-                            riderLatitude = 51.57087333333334 //todo - hardcoded for testing purposes
-                            riderLongitude = -0.37625833333333336
-                        }
-
-                        Log.i("das", "$riderLatitude $riderLongitude")
+                        val locationAsString = snapshot.child("location").value as String
+                        riderLatitude = (locationAsString.split(";")[0]+"").toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
+                        riderLongitude = (locationAsString.split(";")[1]+"").toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - fix null value
 
                         /************ GET DRIVERS'S LOCATION ************/
                         // CODE BELOW IS THE POP UP WHICH ASKS FOR THE LOCATION PERMISSION WHEN THE APP STARTS, USERS CAN CHOOSE TO ACCEPT/DENY REQUEST

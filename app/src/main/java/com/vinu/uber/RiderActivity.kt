@@ -220,9 +220,10 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 val lastKnownLocation = locationManager!!.getLastKnownLocation(LocationManager.GPS_PROVIDER)
                 if (lastKnownLocation != null) { //if there exists a location, send request
 
+                    val locationAsString = "${lastKnownLocation.latitude};${lastKnownLocation.longitude};" //passing as 2 different values didn't work, so passed it together as a String
+
                     //pass in location
-                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("latitude").setValue(lastKnownLocation.latitude)
-                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("longitude").setValue(lastKnownLocation.longitude)
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("location").setValue(locationAsString)
 
                     //this is used in the acceptRequest() of DriverMapActivity
                     FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("riderID").setValue(auth.currentUser!!.uid)
