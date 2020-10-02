@@ -37,8 +37,8 @@ class DriverActivity : AppCompatActivity() {
     var locationListener: LocationListener? = null
 
     //driver's location
-    var driverLatitude: Double? = 0.0 /** temporary solution to avoid NullPointerException when declaring this variable **/
-    var driverLongitude: Double? = 0.0 /** temporary solution to avoid NullPointerException when declaring this variable **/
+    var driverLatitude: Double? = 0.0
+    var driverLongitude: Double? = 0.0
 
     //rider's location
     var riderLatitude: Double? = 0.0
@@ -80,10 +80,20 @@ class DriverActivity : AppCompatActivity() {
                         ChildEventListener {
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) { /** when uber request is made **/
 
-                        /************ GET RIDER'S LOCATION ************/
-                        riderLatitude = snapshot.child("latitude").value as Double //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
-                        riderLongitude = snapshot.child("longitude").value as Double //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - fix null value
+                        Log.i("before", snapshot.child("latitude").value.toString())
+                        Log.i("before", snapshot.child("longitude").value.toString()) //todo - this is null after cancelling and reordering uber
 
+
+                        /************ GET RIDER'S LOCATION ************/
+                        if (snapshot.child("longitude").value != null) {
+                            riderLatitude = snapshot.child("latitude").value.toString().toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
+                            riderLongitude = snapshot.child("longitude").value.toString().toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests //TODO - fix null value
+                        } else {
+                            riderLatitude = 51.57087333333334 //todo - hardcoded for testing purposes
+                            riderLongitude = -0.37625833333333336
+                        }
+
+                        Log.i("das", "$riderLatitude $riderLongitude")
 
                         /************ GET DRIVERS'S LOCATION ************/
                         // CODE BELOW IS THE POP UP WHICH ASKS FOR THE LOCATION PERMISSION WHEN THE APP STARTS, USERS CAN CHOOSE TO ACCEPT/DENY REQUEST
