@@ -64,7 +64,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         callUberButton = findViewById<View>(R.id.callUberButton) as Button
 
         /** check if a request was made, and set uberRequestActive status **/
-            FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID"))
+            FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID")).child("riderLocation")
                 .addValueEventListener(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
                         if (dataSnapshot.exists()) { /** if request exist **/
@@ -172,9 +172,12 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                         } else {
                         /** when driver has accepted the Uber request... **/
 
-                            //Driver's location
-                            driverLatitude = dataSnapshot.child("latitude").value as Double
-                            driverLongitude = dataSnapshot.child("longitude").value as Double
+                            Log.i("driverLocation0", dataSnapshot.value.toString())
+
+                            /** Driver's location **/
+                            val locationAsString = dataSnapshot.child("latLng").value as String
+                            driverLatitude = (locationAsString.split(";")[0]+"").toDouble() //within the 'uberRequest > driverLocation' tab of Firebase Database, we retrieve the lat list of requests
+                            driverLongitude = (locationAsString.split(";")[1]+"").toDouble() //also feasible with deserializer
 
                             /** Set map for Rider **/
                             val riderLocation = Location(LocationManager.GPS_PROVIDER) //creates NEW EMPTY location
@@ -188,14 +191,23 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                             driverLocation.longitude = driverLongitude as Double //adds longitude to the empty location!
                             setLocation(driverLocation, false)
 
+                            Log.i("driverLocation", "checkPoint1")
+
+
                             /** Move camera to include both markers **/
                             val riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
                             mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200))
 
+                            Log.i("driverLocation", "checkPoint2")
+
+
                             /** since request is accepted, rider cannot cancel uber anymore **/
-                            callUberButton?.setText("Your Uber is on its way...")
-                            callUberButton?.setClickable(false)
-                            callUberButton?.setEnabled(false)
+                            callUberButton!!.setText("Your Uber is on its way...") //TODO - fix this
+                            callUberButton!!.setClickable(false)
+                            callUberButton!!.setEnabled(false)
+
+                            Log.i("driverLocation", "checkPoint3")
+
                         }
                     }
 
@@ -234,13 +246,10 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                 if (lastKnownLocation != null) { //if there exists a location, send request
 
                     //passing as 2 different values didn't work, so passed it together as a String
-                    val locationAsString = "${lastKnownLocation.latitude};${lastKnownLocation.longitude};" // also feasible with serializer
+                    val locationAsString = "${lastKnownLocation.latitude};${lastKnownLocation.longitude};${auth.currentUser!!.uid};" // also feasible with serializer
 
                     //pass in location
-                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("location").setValue(locationAsString)
-
-                    //this is used in the acceptRequest() of DriverMapActivity
-                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("riderID").setValue(auth.currentUser!!.uid)
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(auth.currentUser!!.uid).child("riderLocation").child("latLngID").setValue(locationAsString)
 
                     Toast.makeText(applicationContext, "Uber requested", Toast.LENGTH_SHORT).show()
 
@@ -265,9 +274,9 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
             val userLocation = LatLng(location.latitude, location.longitude)
 
             if (riderActive!!) {
-                mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!"))
+                mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
             } else {
-                mMap.addMarker(MarkerOptions().position(userLocation).title("Rider's location").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
+                mMap.addMarker(MarkerOptions().position(userLocation).title("Driver's location").icon(BitmapDescriptorFactory.fromResource(R.drawable.car)))
             }
         }
     }

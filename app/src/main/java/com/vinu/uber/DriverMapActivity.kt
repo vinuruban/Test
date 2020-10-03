@@ -2,7 +2,6 @@ package com.vinu.uber
 
 import android.content.Intent
 import android.location.Location
-import android.location.LocationListener
 import android.location.LocationManager
 import android.net.Uri
 import android.os.Bundle
@@ -10,6 +9,7 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.GoogleMap.OnMapLoadedCallback
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -25,10 +25,11 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
     /** No need for the bottom since we don't need to find location in this activity. Instead, it is passed from the DriverActivity via Intent**/
 //    var locationManager: LocationManager? = null
-//    var locationListener: LocationListener? = null //todo - add locationListener to update map when rider moves (maybe)
+//    var locationListener: LocationListener? = null
 
     var riderLatitude: Double? = null
     var riderLongitude: Double? = null
+    var riderID: String? = null
 
     var driverLatitude: Double? = null
     var driverLongitude: Double? = null
@@ -43,8 +44,10 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         setTitle("Driver's Map")
 
-        riderLatitude = intent.getDoubleExtra("riderLatitude", 0.0)
-        riderLongitude = intent.getDoubleExtra("riderLongitude", 0.0)
+        val locationAsString = intent.getStringExtra("latLngID")
+        riderLatitude = (locationAsString.split(";")[0]+"").toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
+        riderLongitude = (locationAsString.split(";")[1]+"").toDouble() //also feasible with deserializer
+        riderID = locationAsString.split(";")[2]+"" /** needed in acceptRequest() **/
 
         driverLatitude = intent.getDoubleExtra("driverLatitude", 0.0)
         driverLongitude = intent.getDoubleExtra("driverLongitude", 0.0)
@@ -70,7 +73,7 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
 
         /** Move camera to include both markers **/
         val riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
-        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200))
+        mMap.setOnMapLoadedCallback(OnMapLoadedCallback { mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200)) }) //TODO - when rider is north of driver, we get "java.lang.IllegalArgumentException: southern latitude exceeds northern latitude (51.574614999999994 > 51.57376166666666)"
 
     }
 
@@ -86,18 +89,16 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
             if (riderActive!!) {
                 mMap.addMarker(MarkerOptions().position(userLocation).title("Rider's location"))
             } else {
-                mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!").icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE)))
+                mMap.addMarker(MarkerOptions().position(userLocation).title("You're here!").icon(BitmapDescriptorFactory.fromResource(R.drawable.car)))
             }
         }
     }
 
     /** Accept Uber request and Navigate to Google Maps **/
     fun acceptRequest(view: View?) {
-        val riderID = intent.getStringExtra("riderID")
 
         //pass driver's location in uberRequest - this will also alert the rider and change the map view in RiderActivity.kt
-        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID).child("driverLocation").child("latitude").setValue(driverLatitude)
-        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID).child("driverLocation").child("longitude").setValue(driverLongitude)
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID!!).child("driverLocation").child("latLng").setValue("$driverLatitude;$driverLongitude;")
 
         val uri = "http://maps.google.com/maps?saddr=" + driverLatitude + "," + driverLongitude + "&daddr=" + riderLatitude + "," + riderLongitude
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(uri))

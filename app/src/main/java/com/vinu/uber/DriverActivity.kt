@@ -86,10 +86,12 @@ class DriverActivity : AppCompatActivity() {
                         ChildEventListener {
                     override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) { /** when uber request is made **/
 
+                        Log.i("snapshot of riderLocation", snapshot.value.toString())
+
                         mSnapshot = snapshot
 
                         /************ GET RIDER'S LOCATION ************/
-                        val locationAsString = snapshot.child("location").value as String
+                        val locationAsString = snapshot.child("riderLocation").child("latLngID").value as String
                         riderLatitude = (locationAsString.split(";")[0]+"").toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
                         riderLongitude = (locationAsString.split(";")[1]+"").toDouble() //also feasible with deserializer
 
@@ -146,20 +148,19 @@ class DriverActivity : AppCompatActivity() {
 
         /** When clicking on the request **/
         requestListView?.onItemClickListener = AdapterView.OnItemClickListener { parent, view, position, id ->
+
             val snapshot = requests.get(position) //get data of the request that was clicked on
+
+            Log.i("snapshot of uberRequests", snapshot.value.toString())
 
             var intent = Intent(this, DriverMapActivity::class.java)
 
             //rider's location
-            intent.putExtra("riderLatitude", snapshot.child("latitude").value as Double)
-            intent.putExtra("riderLongitude", snapshot.child("longitude").value as Double)
+            intent.putExtra("latLngID", snapshot.child("riderLocation").child("latLngID").value as String)
 
             //driver's location
             intent.putExtra("driverLatitude", driverLatitude)
             intent.putExtra("driverLongitude", driverLongitude)
-
-            //send Rider's user ID
-            intent.putExtra("riderID", snapshot.child("riderID").value as String)
 
             startActivity(intent)
         }
