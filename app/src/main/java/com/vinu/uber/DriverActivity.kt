@@ -48,6 +48,8 @@ class DriverActivity : AppCompatActivity() {
 
     var mSnapshot: DataSnapshot? = null
 
+    var requestAcceptedStatus: Boolean? = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_driver)
@@ -74,8 +76,21 @@ class DriverActivity : AppCompatActivity() {
                     adapter!!.notifyDataSetChanged()
                     /** to update listview with the new driverLatitude & driverLongitude **/
 
-                    /** when driverLocation changes, this will update it in Firebase database to help refresh rider's map **/
-                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID!!).child("driverLocation").child("latLng").setValue("$driverLatitude;$driverLongitude;")
+                    /** after the request is accepted and when driverLocation changes, this will update it in Firebase database to help refresh rider's map **/
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID!!).child("driverLocation")
+                            .addChildEventListener(object :
+                                    ChildEventListener {
+                                override fun onChildAdded(snapshot: DataSnapshot, previousChildName: String?) {
+                                    if (snapshot.exists()) {
+                                        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID!!).child("driverLocation").child("latLng").setValue("$driverLatitude;$driverLongitude;")
+                                    }
+                                }
+                                override fun onChildChanged(snapshot: DataSnapshot, previousChildName: String?) {}
+                                override fun onChildRemoved(snapshot: DataSnapshot) {}
+                                override fun onChildMoved(snapshot: DataSnapshot, previousChildName: String?) {}
+                                override fun onCancelled(error: DatabaseError) {}
+
+                            })
 
                 }
             }

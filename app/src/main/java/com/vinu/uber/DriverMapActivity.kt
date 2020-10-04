@@ -9,7 +9,6 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.GoogleMap.OnMapLoadedCallback
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
@@ -17,6 +16,7 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.core.utilities.Utilities
 
 
 class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
@@ -72,8 +72,20 @@ class DriverMapActivity : AppCompatActivity(), OnMapReadyCallback {
         setLocation(driverLocation, false)
 
         /** Move camera to include both markers **/
-        val riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
-        mMap.setOnMapLoadedCallback(OnMapLoadedCallback { mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200)) }) //TODO - when rider is north of driver, we get "java.lang.IllegalArgumentException: southern latitude exceeds northern latitude (51.574614999999994 > 51.57376166666666)"
+        var riderAndDriver: LatLngBounds?
+
+        if (riderLatitude!! > driverLatitude!!) { /** To avoid the following: "java.lang.IllegalArgumentException: southern latitude exceeds northern latitude (51.574614999999994 > 51.57376166666666)" **/
+            riderAndDriver = LatLngBounds(LatLng(driverLatitude!!, driverLongitude!!), LatLng(riderLatitude!!, riderLongitude!!))
+        } else {
+            riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
+        }
+
+        val width = resources.displayMetrics.widthPixels
+        val height = resources.displayMetrics.heightPixels
+        val padding = (width * 0.12).toInt() // offset from edges of the map 12% of screen
+
+        mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, width, height, padding))
+
 
     }
 

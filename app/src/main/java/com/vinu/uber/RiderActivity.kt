@@ -187,8 +187,6 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                         } else {
                         /** when driver has accepted the Uber request... **/
 
-                            Log.i("driverLocation0", dataSnapshot.value.toString())
-
                             /** Driver's location **/
                             val locationAsString = dataSnapshot.child("latLng").value as String
                             driverLatitude = (locationAsString.split(";")[0]+"").toDouble() //within the 'uberRequest > driverLocation' tab of Firebase Database, we retrieve the lat list of requests
@@ -206,22 +204,26 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                             driverLocation.longitude = driverLongitude as Double //adds longitude to the empty location!
                             setLocation(driverLocation, false)
 
-                            Log.i("driverLocation", "checkPoint1")
-
-
                             /** Move camera to include both markers **/
-                            val riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200)) //TODO - when rider is north of driver, we get "java.lang.IllegalArgumentException: southern latitude exceeds northern latitude (51.574614999999994 > 51.57376166666666)"
+                            var riderAndDriver: LatLngBounds?
 
-                            Log.i("driverLocation", "checkPoint2")
+                            if (riderLatitude!! > driverLatitude!!) { /** To avoid the following: "java.lang.IllegalArgumentException: southern latitude exceeds northern latitude (51.574614999999994 > 51.57376166666666)" **/
+                                riderAndDriver = LatLngBounds(LatLng(driverLatitude!!, driverLongitude!!), LatLng(riderLatitude!!, riderLongitude!!))
+                            } else {
+                                riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
+                            }
+
+                            val width = resources.displayMetrics.widthPixels
+                            val height = resources.displayMetrics.heightPixels
+                            val padding = (width * 0.12).toInt() // offset from edges of the map 12% of screen
+
+                            mMap.animateCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, width, height, padding))
 
 
                             /** since request is accepted, rider cannot cancel uber anymore **/
                             callUberButton!!.setText("Your Uber is on its way...")
                             callUberButton!!.setClickable(false)
                             callUberButton!!.setEnabled(false)
-
-                            Log.i("driverLocation", "checkPoint3")
 
                         }
                     }
