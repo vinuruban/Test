@@ -211,7 +211,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
 
                             /** Move camera to include both markers **/
                             val riderAndDriver = LatLngBounds(LatLng(riderLatitude!!, riderLongitude!!), LatLng(driverLatitude!!, driverLongitude!!))
-                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200))
+                            mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(riderAndDriver, 200)) //TODO - when rider is north of driver, we get "java.lang.IllegalArgumentException: southern latitude exceeds northern latitude (51.574614999999994 > 51.57376166666666)"
 
                             Log.i("driverLocation", "checkPoint2")
 

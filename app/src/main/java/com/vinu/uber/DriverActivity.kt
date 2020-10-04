@@ -44,6 +44,8 @@ class DriverActivity : AppCompatActivity() {
     var riderLatitude: Double? = 0.0
     var riderLongitude: Double? = 0.0
 
+    var riderID: String? = null
+
     var mSnapshot: DataSnapshot? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +75,7 @@ class DriverActivity : AppCompatActivity() {
                     /** to update listview with the new driverLatitude & driverLongitude **/
 
                     /** when driverLocation changes, this will update it in Firebase database to help refresh rider's map **/
-                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child("QTvyVvpLhfV7TkHgY3l0G2CDVnf1").child("driverLocation").child("latLng").setValue("$driverLatitude;$driverLongitude;")
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child(riderID!!).child("driverLocation").child("latLng").setValue("$driverLatitude;$driverLongitude;")
 
                 }
             }
@@ -98,6 +100,7 @@ class DriverActivity : AppCompatActivity() {
                         val locationAsString = snapshot.child("riderLocation").child("latLngID").value as String
                         riderLatitude = (locationAsString.split(";")[0]+"").toDouble() //within the 'uberRequest' tab of Firebase Database, we retrieve the lat list of requests
                         riderLongitude = (locationAsString.split(";")[1]+"").toDouble() //also feasible with deserializer
+                        riderID = locationAsString.split(";")[2]+"" /** needed in acceptRequest() **/
 
                         /************ GET DRIVERS'S LOCATION ************/
                         // CODE BELOW IS THE POP UP WHICH ASKS FOR THE LOCATION PERMISSION WHEN THE APP STARTS, USERS CAN CHOOSE TO ACCEPT/DENY REQUEST
