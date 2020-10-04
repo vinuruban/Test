@@ -34,7 +34,7 @@ class DriverActivity : AppCompatActivity() {
 
     /** although map isn't used, we still need to get location of Rider and Driver to calculate distance. Thus, the below is needed **/
     var locationManager: LocationManager? = null
-    var locationListener: LocationListener? = null
+    var locationListener: LocationListener? = null /** needed when location changes **/
 
     //driver's location
     var driverLatitude: Double? = 0.0
@@ -58,7 +58,7 @@ class DriverActivity : AppCompatActivity() {
         locationManager = this.getSystemService(LOCATION_SERVICE) as LocationManager
 
         locationListener = object : LocationListener { /** what to do when location changes **/
-            override fun onLocationChanged(location: Location) { //TODO - when driverLocation changes, make sure this refreshes rider's map
+            override fun onLocationChanged(location: Location) {
             if(location.latitude != driverLatitude) {
                 if (location.longitude != driverLongitude) {
                     distanceList.clear() //clear previous data
@@ -71,6 +71,10 @@ class DriverActivity : AppCompatActivity() {
                     requests.add(mSnapshot!!) //to store data of the request that was clicked on, from the Firebase Database
                     adapter!!.notifyDataSetChanged()
                     /** to update listview with the new driverLatitude & driverLongitude **/
+
+                    /** when driverLocation changes, this will update it in Firebase database to help refresh rider's map **/
+                    FirebaseDatabase.getInstance().getReference().child("uberRequests").child("QTvyVvpLhfV7TkHgY3l0G2CDVnf1").child("driverLocation").child("latLng").setValue("$driverLatitude;$driverLongitude;")
+
                 }
             }
         }

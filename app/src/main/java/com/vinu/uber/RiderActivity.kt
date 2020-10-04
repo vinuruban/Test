@@ -81,7 +81,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
 
         /** when driver's location changes, update map (after request is accepted) **/
         FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID")).child("driverLocation")
-                .addValueEventListener(object : ValueEventListener { //TODO - add location listener in DriverMapActivity.kt and code it to update location in ....child("driverLocation") and wrap it with an if function (if driverLocation exists, then...)
+                .addValueEventListener(object : ValueEventListener {
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
                         val riderLocation = Location(LocationManager.GPS_PROVIDER) //creates NEW EMPTY location
                         riderLocation.latitude = riderLatitude!! //adds latitude to the empty location!
