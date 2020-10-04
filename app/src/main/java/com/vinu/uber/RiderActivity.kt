@@ -64,13 +64,29 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         callUberButton = findViewById<View>(R.id.callUberButton) as Button
 
         /** check if a request was made, and set uberRequestActive status **/
-            FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID")).child("riderLocation")
-                .addValueEventListener(object : ValueEventListener {
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID")).child("riderLocation")
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(dataSnapshot: DataSnapshot) {
+                    if (dataSnapshot.exists()) { /** if request exist **/
+                        uberRequestActive = true
+                        callUberButton?.setText("Cancel Uber")
+                    }
+                }
+
+                override fun onCancelled(databaseError: DatabaseError) {
+                    // Getting Post failed, log a message
+                    Log.w("Error", "loadPost:onCancelled", databaseError.toException())
+                }
+            })
+
+        /** when driver's location changes, update map (after request is accepted) **/
+        FirebaseDatabase.getInstance().getReference().child("uberRequests").child(intent.getStringExtra("userID")).child("driverLocation")
+                .addValueEventListener(object : ValueEventListener { //TODO - add location listener in DriverMapActivity.kt and code it to update location in ....child("driverLocation") and wrap it with an if function (if driverLocation exists, then...)
                     override fun onDataChange(dataSnapshot: DataSnapshot) {
-                        if (dataSnapshot.exists()) { /** if request exist **/
-                            uberRequestActive = true
-                            callUberButton?.setText("Cancel Uber")
-                        }
+                        val riderLocation = Location(LocationManager.GPS_PROVIDER) //creates NEW EMPTY location
+                        riderLocation.latitude = riderLatitude!! //adds latitude to the empty location!
+                        riderLocation.longitude = riderLongitude!! //adds longitude to the empty location!
+                        updateMap(riderLocation)
                     }
 
                     override fun onCancelled(databaseError: DatabaseError) {
@@ -78,7 +94,6 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
                         Log.w("Error", "loadPost:onCancelled", databaseError.toException())
                     }
                 })
-
 
     }
 
@@ -88,7 +103,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
         locationManager = this.getSystemService(LOCATION_SERVICE) as LocationManager
 
         locationListener = object : LocationListener {
-            override fun onLocationChanged(location: Location) { //TODO - when riderLocation changes, make sure this refreshes driver's map
+            override fun onLocationChanged(location: Location) { /** when rider's location changes, update map (before request is accepted) **/
                 if(location.latitude != riderLatitude) {
                     if(location.longitude != riderLongitude) {
                         updateMap(location) /** listener is always being triggered when the emulator, so only refresh map if location changes!!! **/
@@ -202,7 +217,7 @@ class RiderActivity : AppCompatActivity(), OnMapReadyCallback {
 
 
                             /** since request is accepted, rider cannot cancel uber anymore **/
-                            callUberButton!!.setText("Your Uber is on its way...") //TODO - fix this
+                            callUberButton!!.setText("Your Uber is on its way...")
                             callUberButton!!.setClickable(false)
                             callUberButton!!.setEnabled(false)
 
